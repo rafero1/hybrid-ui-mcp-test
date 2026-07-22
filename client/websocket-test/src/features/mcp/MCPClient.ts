@@ -52,7 +52,7 @@ class MCPClient {
 
   async callTool(
     toolName: (typeof this.tools)[number]["name"],
-    input: { [x: string]: unknown } | undefined,
+    input?: { [x: string]: unknown },
   ): Promise<any> {
     if (!this.isConnected) {
       throw new Error("Not connected to MCP server.");
@@ -62,6 +62,8 @@ class MCPClient {
       name: toolName,
       arguments: input,
     });
+
+    console.log(`Response from tool "${toolName}":`, response);
 
     return response;
   }
