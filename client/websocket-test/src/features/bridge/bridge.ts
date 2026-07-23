@@ -6,26 +6,24 @@ function parseResponseBody<T>(body: any): T {
   return parsed as T;
 }
 
+async function callMCPTool<T>(
+  toolName: string,
+  input?: { [x: string]: unknown },
+): Promise<T> {
+  const response = MCPClient.getInstance().callTool(toolName, input);
+  try {
+    const body = await response;
+    return parseResponseBody<T>(body);
+  } catch (error) {
+    console.error(`Error calling tool ${toolName}:`, error);
+    throw error;
+  }
+}
+
 export async function getTestList(): Promise<Array<Test>> {
-  const response = MCPClient.getInstance().callTool("list");
-  return response
-    .then(body => {
-      return parseResponseBody<Array<Test>>(body);
-    })
-    .catch(error => {
-      console.error("Error fetching test list:", error);
-      throw error;
-    });
+  return callMCPTool<Array<Test>>("list");
 }
 
 export async function add(a: number, b: number): Promise<number> {
-  const response = MCPClient.getInstance().callTool("add", { a, b });
-  return response
-    .then(body => {
-      return parseResponseBody<number>(body);
-    })
-    .catch(error => {
-      console.error("Error adding numbers:", error);
-      throw error;
-    });
+  return callMCPTool<number>("add", { a, b });
 }
