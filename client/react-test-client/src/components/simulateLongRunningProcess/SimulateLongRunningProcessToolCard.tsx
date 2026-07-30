@@ -15,7 +15,7 @@ const ProgressState = {
 
 type ProgressState = (typeof ProgressState)[keyof typeof ProgressState];
 
-function SimulateLongRunningProcess() {
+function SimulateLongRunningProcessToolCard() {
   const [processedItems, setProcessedItems] = useState<Array<string>>([]);
   const [progress, setProgress] = useState<ProgressState>(
     ProgressState.NotStarted,
@@ -49,17 +49,17 @@ function SimulateLongRunningProcess() {
           Long-Running Process w/ Updates
         </h2>
         <div className="gap-1 flex flex-items-center">
+          {progress === ProgressState.Started && (
+            <Button variant={"destructive"} onClick={handleCancel}>
+              Cancel TODO <TrashIcon />
+            </Button>
+          )}
           <Button
             onClick={handleStart}
             disabled={progress === ProgressState.Started}
           >
             {progress === ProgressState.Started ? <Spinner /> : "Start"}
           </Button>
-          {progress === ProgressState.Started && (
-            <Button variant={"destructive"} onClick={handleCancel}>
-              Cancel TODO <TrashIcon />
-            </Button>
-          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -85,4 +85,4 @@ function SimulateLongRunningProcess() {
   );
 }
 
-export default SimulateLongRunningProcess;
+export default SimulateLongRunningProcessToolCard;

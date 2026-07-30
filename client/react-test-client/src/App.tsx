@@ -1,8 +1,8 @@
 import useMCPClient from "@/features/mcp/useMCPClient";
-import AddNumbersToolCard from "./components/addNumbers/addNumbers";
-import TestListToolCard from "./components/testList/testList";
+import AddNumbersToolCard from "./components/addNumbers/AddNumbersToolCard";
+import TestListToolCard from "./components/testList/TestListToolCard";
 import "./index.css";
-import SimulateLongRunningProcess from "./components/simulateLongRunningProcess/simulateLongRunningProcess";
+import SimulateLongRunningProcessToolCard from "./components/simulateLongRunningProcess/SimulateLongRunningProcessToolCard";
 
 function App() {
   useMCPClient();
@@ -17,7 +17,7 @@ function App() {
           <div className="flex flex-col gap-4">
             <TestListToolCard />
             <AddNumbersToolCard />
-            <SimulateLongRunningProcess />
+            <SimulateLongRunningProcessToolCard />
           </div>
         </div>
       </section>

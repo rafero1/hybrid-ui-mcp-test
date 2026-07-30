@@ -17,7 +17,7 @@ export type OnProgressUpdate = (
 ) => void;
 
 export type ToolCallbacks = {
-  onProgressUpdate: OnProgressUpdate;
+  onProgressUpdate?: OnProgressUpdate;
 };
 
 class MCPClient {
