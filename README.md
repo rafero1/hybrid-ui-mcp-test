@@ -1,4 +1,5 @@
 # Hybrid UI Test
 
-- [ ] Test websocket / notification broadcast mechanism
+- [ ] Long running process with progress broadcast
+- [ ] One request broadcasting multiple events
 - [ ] AI prompting integration

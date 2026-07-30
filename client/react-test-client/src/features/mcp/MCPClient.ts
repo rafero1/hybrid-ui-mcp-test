@@ -1,6 +1,24 @@
 import { Client } from "@modelcontextprotocol/sdk/client";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
-import type { Tool } from "@modelcontextprotocol/sdk/types";
+import {
+  ProgressNotificationSchema,
+  type ProgressNotificationParams,
+  type Tool,
+} from "@modelcontextprotocol/sdk/types";
+
+export type ProgressListenerCallback = (
+  notificationParams: ProgressNotificationParams,
+) => void;
+
+const progressListeners = new Map<string | number, ProgressListenerCallback>();
+
+export type OnProgressUpdate = (
+  notificationParams: ProgressNotificationParams,
+) => void;
+
+export type ToolCallbacks = {
+  onProgressUpdate: OnProgressUpdate;
+};
 
 class MCPClient {
   private static instance: MCPClient | null = null;
@@ -20,6 +38,22 @@ class MCPClient {
     return MCPClient.instance;
   }
 
+  setupNotificationHandlers() {
+    this.mcp.setNotificationHandler(
+      ProgressNotificationSchema,
+      notification => {
+        const listener = progressListeners.get(
+          notification.params.progressToken,
+        );
+        listener?.(notification.params);
+        console.log(
+          `[ProgressUpdate][${notification.params.progressToken}]`,
+          notification.params,
+        );
+      },
+    );
+  }
+
   async connect(url: URL): Promise<void> {
     if (this.isConnected) {
       console.warn("Already connected to MCP server.");
@@ -32,6 +66,8 @@ class MCPClient {
       await this.mcp.connect(this.transport);
       this.isConnected = true;
       console.log("Connected to MCP server at", url.toString());
+
+      this.setupNotificationHandlers();
 
       const toolsOnServer = await this.mcp.listTools();
       console.log("Available tools on server:", toolsOnServer);
@@ -51,21 +87,36 @@ class MCPClient {
   }
 
   async callTool(
-    toolName: (typeof this.tools)[number]["name"],
+    toolName: string,
     input?: { [x: string]: unknown },
-  ): Promise<any> {
+    callbacks?: ToolCallbacks,
+  ): Promise<typeof response> {
     if (!this.isConnected) {
       throw new Error("Not connected to MCP server.");
+    }
+
+    // Every progress notification from the server carries this token back,
+    // so we know it belongs to this specific tool call.
+    const progressToken = crypto.randomUUID();
+
+    if (callbacks?.onProgressUpdate) {
+      progressListeners.set(progressToken, callbacks.onProgressUpdate);
     }
 
     const response = await this.mcp.callTool({
       name: toolName,
       arguments: input,
+      _meta: {
+        progressToken,
+      },
     });
-
     console.log(`Response from tool "${toolName}":`, response);
 
-    return response;
+    try {
+      return response;
+    } finally {
+      progressListeners.delete(progressToken);
+    }
   }
 }
 

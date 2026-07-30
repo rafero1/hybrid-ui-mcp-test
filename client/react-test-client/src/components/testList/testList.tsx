@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { getTestList } from "@/features/bridge/bridge";
+import type { Test } from "@/features/types/test";
 
 function TestListToolCard() {
-  const [tests, setTests] = useState<{ Id: number; Name: string }[]>([]);
+  const [tests, setTests] = useState<Test[]>([]);
 
   const handleFetchTests = async () => {
     try {
@@ -23,7 +24,7 @@ function TestListToolCard() {
       </CardHeader>
       <CardContent>
         <ul>
-          {tests && tests.map(test => <li key={test.Id}>{test.Name}</li>)}
+          {tests && tests.map(test => <li key={test.id}>{test.name}</li>)}
         </ul>
       </CardContent>
     </Card>

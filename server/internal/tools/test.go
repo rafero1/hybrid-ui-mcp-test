@@ -1,6 +1,6 @@
 package tools
 
 type Test struct {
-	Id   string
-	Name string
+	Id   string `json:"id"`
+	Name string `json:"name"`
 }

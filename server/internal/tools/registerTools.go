@@ -24,4 +24,13 @@ func RegisterTools(s *server.MCPServer) {
 		mcp.WithDescription("Returns a list of tests."),
 	)
 	s.AddTool(listTool, handleList)
+
+	simulateLongRunningProcessTool := mcp.NewTool("simulateLongRunningProcess",
+		mcp.WithDescription("Simulates a long-running process and sends progress updates."),
+		mcp.WithNumber("itemNumber",
+			mcp.Required(),
+			mcp.Description("The number of items to process."),
+		),
+	)
+	s.AddTool(simulateLongRunningProcessTool, handleSimulateLongRunningProcess)
 }

@@ -1,4 +1,7 @@
-import MCPClient from "@/features/mcp/MCPClient";
+import MCPClient, {
+  type OnProgressUpdate,
+  type ToolCallbacks,
+} from "@/features/mcp/MCPClient";
 import type { Test } from "@/features/types/test";
 
 function parseResponseBody<T>(body: any): T {
@@ -9,8 +12,9 @@ function parseResponseBody<T>(body: any): T {
 async function callMCPTool<T>(
   toolName: string,
   input?: { [x: string]: unknown },
+  callbacks?: ToolCallbacks,
 ): Promise<T> {
-  const response = MCPClient.getInstance().callTool(toolName, input);
+  const response = MCPClient.getInstance().callTool(toolName, input, callbacks);
   try {
     const body = await response;
     return parseResponseBody<T>(body);
@@ -26,4 +30,20 @@ export async function getTestList(): Promise<Array<Test>> {
 
 export async function add(a: number, b: number): Promise<number> {
   return callMCPTool<number>("add", { a, b });
+}
+
+export async function simulateLongRunningProcess(
+  itemNumber: number,
+  onProgressUpdate?: OnProgressUpdate,
+) {
+  return callMCPTool<{
+    results: Array<Test>;
+    count: number;
+  }>(
+    "simulateLongRunningProcess",
+    {
+      itemNumber,
+    },
+    onProgressUpdate && { onProgressUpdate },
+  );
 }
