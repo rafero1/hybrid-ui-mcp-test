@@ -2,23 +2,16 @@ import { Client } from "@modelcontextprotocol/sdk/client";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp";
 import {
   ProgressNotificationSchema,
-  type ProgressNotificationParams,
   type Tool,
 } from "@modelcontextprotocol/sdk/types";
-
-export type ProgressListenerCallback = (
-  notificationParams: ProgressNotificationParams,
-) => void;
+import type {
+  TextResponseContent,
+  ProgressListenerCallback,
+  ToolCallbacks,
+} from "./types";
+import { AI } from "./ai";
 
 const progressListeners = new Map<string | number, ProgressListenerCallback>();
-
-export type OnProgressUpdate = (
-  notificationParams: ProgressNotificationParams,
-) => void;
-
-export type ToolCallbacks = {
-  onProgressUpdate?: OnProgressUpdate;
-};
 
 class MCPClient {
   private static instance: MCPClient | null = null;
@@ -92,7 +85,7 @@ class MCPClient {
     callbacks?: ToolCallbacks,
   ): Promise<typeof response> {
     if (!this.isConnected) {
-      throw new Error("Not connected to MCP server.");
+      throw new Error(`[callTool][${toolName}] Not connected to MCP server`);
     }
 
     // Every progress notification from the server carries this token back,
@@ -110,12 +103,90 @@ class MCPClient {
         progressToken,
       },
     });
-    console.log(`Response from tool "${toolName}":`, response);
+    console.log(`[callTool][${toolName}] response:`, response);
 
     try {
       return response;
     } finally {
-      progressListeners.delete(progressToken);
+      // small delay to prevent race condition (listener deleted before it can process the last notification of a stack)
+      setTimeout(() => {
+        progressListeners.delete(progressToken);
+      }, 100);
+    }
+  }
+
+  // TODO: some parts of this change depending on the API. It should be owned by the AI wrapper object
+  async processQuery(query: string): Promise<TextResponseContent[]> {
+    try {
+      const messages: TextResponseContent[] = [];
+
+      const response = await AI.gemini.call(query, this.tools);
+
+      if (!response.ok) {
+        throw new Error(
+          `HTTP Error. Status: ${response.status}. Body: ${response.body}`,
+        );
+      }
+
+      // data here has the decoded response json object, which is pretty big and has all the result info outputted by the model
+      const data = await response.json();
+      console.log("[processQuery] response:", data);
+
+      const interactionId = data.id;
+
+      // every interaction will have a several steps. We loop through them to see if there's a function call
+
+      const loopThroughSteps = async (tools: Tool[], data: any) => {
+        for (const step of data.steps) {
+          if (step.type === "function_call") {
+            // TODO: user should be asked to agree to some tool calls first. If they disagree, don't call
+
+            if (tools.some(tool => tool.name === step.name)) {
+              const toolResult = await this.callTool(step.name, step.arguments);
+
+              messages.push({
+                type: "text",
+                text: `[Calling tool "${step.name}"...]`,
+              });
+
+              // send back the tool output back to the model
+
+              const toolResultQuery = {
+                type: "function_result",
+                name: step.name,
+                call_id: step.id,
+                result: JSON.stringify(
+                  (toolResult.content as TextResponseContent[])[0],
+                ),
+              };
+
+              const toolResultQueryResponse = await AI.gemini.call(
+                JSON.stringify(toolResultQuery),
+                tools,
+                interactionId,
+              );
+
+              const data = await toolResultQueryResponse.json();
+              console.log(data);
+
+              return loopThroughSteps(tools, data);
+            }
+          }
+          if (step.type === "model_output") {
+            messages.push(step.content[0]);
+            return messages;
+          }
+        }
+
+        throw new Error(
+          "Model did not return a valid output. Expected a 'model_output' or 'function_result' inside 'steps'",
+        );
+      };
+
+      return loopThroughSteps(this.tools, data);
+    } catch (error) {
+      console.log("[processQuery] Error calling AI:", error);
+      throw error;
     }
   }
 }

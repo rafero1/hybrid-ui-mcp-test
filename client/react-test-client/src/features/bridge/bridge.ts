@@ -1,27 +1,19 @@
-import MCPClient, {
-  type OnProgressUpdate,
-  type ToolCallbacks,
-} from "@/features/mcp/MCPClient";
+import MCPClient from "@/features/mcp/MCPClient";
+import { type OnProgressUpdate, type ToolCallbacks } from "../mcp/types";
 import type { Test } from "@/features/types/test";
-
-function parseResponseBody<T>(body: any): T {
-  const parsed = JSON.parse(body.content[0].text);
-  return parsed as T;
-}
+import { parseMcpToolResponseBody } from "../mcp/utils";
 
 async function callMCPTool<T>(
   toolName: string,
   input?: { [x: string]: unknown },
   callbacks?: ToolCallbacks,
 ): Promise<T> {
-  const response = MCPClient.getInstance().callTool(toolName, input, callbacks);
-  try {
-    const body = await response;
-    return parseResponseBody<T>(body);
-  } catch (error) {
-    console.error(`Error calling tool ${toolName}:`, error);
-    throw error;
-  }
+  const body = await MCPClient.getInstance().callTool(
+    toolName,
+    input,
+    callbacks,
+  );
+  return parseMcpToolResponseBody<T>(body);
 }
 
 export async function getTestList(): Promise<Array<Test>> {

@@ -5,37 +5,28 @@ import { useCallback, useState } from "react";
 import { Progress, ProgressLabel, ProgressValue } from "../ui/progress";
 import { Spinner } from "../ui/spinner";
 import { TrashIcon } from "lucide-react";
-
-const ProgressState = {
-  NotStarted: 0,
-  Started: 1,
-  Done: 2,
-  Cancelled: 3,
-} as const;
-
-type ProgressState = (typeof ProgressState)[keyof typeof ProgressState];
+import { TaskProgress } from "@/types/progress";
 
 function SimulateLongRunningProcessToolCard() {
   const [processedItems, setProcessedItems] = useState<Array<string>>([]);
-  const [progress, setProgress] = useState<ProgressState>(
-    ProgressState.NotStarted,
+  const [progress, setProgress] = useState<TaskProgress>(
+    TaskProgress.NotStarted,
   );
 
   const handleStart = useCallback(async () => {
+    setProgress(TaskProgress.Started);
+    setProcessedItems([]);
     try {
-      setProgress(ProgressState.Started);
-      setProcessedItems([]);
-      const response = await simulateLongRunningProcess(10, params => {
+      await simulateLongRunningProcess(10, params => {
         setProcessedItems(old => [
           ...old,
           params.message ?? "Processed item " + params.progress.toString(),
         ]);
       });
-      console.log("simulateLongRunningProcess response:", response);
-      setProgress(ProgressState.Done);
     } catch (error) {
       console.error("Error calling simulateLongRunningProcess:", error);
     }
+    setProgress(TaskProgress.Done);
   }, []);
 
   const handleCancel = () => {
@@ -49,25 +40,25 @@ function SimulateLongRunningProcessToolCard() {
           Long-Running Process w/ Updates
         </h2>
         <div className="gap-1 flex flex-items-center">
-          {progress === ProgressState.Started && (
+          {progress === TaskProgress.Started && (
             <Button variant={"destructive"} onClick={handleCancel}>
               Cancel TODO <TrashIcon />
             </Button>
           )}
           <Button
             onClick={handleStart}
-            disabled={progress === ProgressState.Started}
+            disabled={progress === TaskProgress.Started}
           >
-            {progress === ProgressState.Started ? <Spinner /> : "Start"}
+            {progress === TaskProgress.Started ? <Spinner /> : "Start"}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
         <Progress value={processedItems.length * 10} className="w-full">
           <ProgressLabel>
-            {progress === ProgressState.NotStarted && "Idle"}
-            {progress === ProgressState.Started && "Working..."}
-            {progress === ProgressState.Done && "Finished"}
+            {progress === TaskProgress.NotStarted && "Idle"}
+            {progress === TaskProgress.Started && "Working..."}
+            {progress === TaskProgress.Done && "Finished"}
           </ProgressLabel>
           <ProgressValue />
         </Progress>
