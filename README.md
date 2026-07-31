@@ -1,5 +1,5 @@
 # Hybrid UI Test
 
-- [ ] Long running process with progress broadcast
+Major TODO:
+
 - [ ] One request broadcasting multiple events
-- [ ] AI prompting integration
